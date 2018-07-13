@@ -16,7 +16,6 @@ var partial_update_module = function(profile_json) {
     var temp_json = JSON.parse(temp_string);
     original_data = temp_json;
     request_json = {};
-    request_json['lbid'] = original_data['lbid'];
 
     console.log('Partial Update initialized successfully');
   }
@@ -70,6 +69,52 @@ var partial_update_module = function(profile_json) {
     }
   };
 
+  /** NOT USED(BUGS EXIST) */
+  /** @param {*} value - new value which should be stored in json
+   *  @param {Object} json - json where the value is stored
+   *  @param {Object} array - array of keys that belongs to json to navigate and store the value
+  /** creating a json for partial save using array with nested elements, value to change (Note - Recursive method, stores only required key) */
+  var insert_at_end = function(array, json, value, delete_value) {
+    for (index in array) {
+        if (index < array.length - 1) {
+            if (!json[array[index]])
+                json[array[index]] = {};
+            delete_value = false;
+
+            /** make delete_value true if changed value is same as original value */
+            if (check_with_original_value(array, value))
+                delete_value = true;
+
+            /** resursive for nesting */
+            json[array[index]] = insert_at_end(array.slice(1, array.length), json[array[index]], value, delete_value);
+
+            /** if nested json is empty delete the key */
+            if (Object.keys(json[array[index]]).length == 0)
+                delete json[array[index]];
+
+            return json;
+        }
+        else {
+
+            /** if it is a array send entire key in json */
+            if (Array.isArray(obj[array[index]])) {
+                if (array[index] == 'educations')
+                    save_all_education();
+                if (array[index] == 'positions')
+                    save_all_occupation();
+                json[array[index]] = obj[array[index]];
+            }
+            else {
+                if (delete_value)
+                    delete json[array[index]];
+                else
+                    json[array[index]] = value;
+            }
+            return json;
+        }
+    }
+  };
+
   /* If key_input is given: Return true if key's value is the same as `original`, false otherwise */
   /** (Note - this method used for full parent key check) */
   var check_entire_nested_key = function(json_input, key_input) {
@@ -83,7 +128,7 @@ var partial_update_module = function(profile_json) {
   /** save partial json */
   var save_partial_json = function(keys, value) {
     var array = keys.split(', ');
-    var result = insert_at_end_full_key(array, request_json, value);
+    var result = insert_at_end_full_key(array, request_json, value); // insert_at_end(array, request_json, value)
     for (key in result) {
       request_json[key] = result[key]
     }
